@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate Asset Registry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #6c5ce7;
+            --accent-hover: #5649c0;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid #333;
+            padding: 1rem 2rem;
+        }
+        .navbar-brand {
+            color: var(--text-main) !important;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .asset-card {
+            background-color: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .asset-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border-color: var(--accent-color);
+        }
+        .card-title {
+            color: #fff;
+            font-weight: 600;
+        }
+        .card-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .asset-value {
+            font-size: 1.2rem;
+            color: #00b894;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+        .btn-action {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid #444;
+        }
+        .form-control {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+        }
+        .form-control:focus {
+            background-color: #2d2d2d;
+            color: #fff;
+            border-color: var(--accent-color);
+            box-shadow: none;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.8rem 1rem;
+            }
+            .search-container .input-group {
+                flex-direction: column;
+            }
+            .search-container .form-control {
+                width: 100% !important;
+                border-radius: 6px !important;
+                margin-bottom: 10px;
+            }
+            .search-container .btn {
+                width: 100%;
+                border-radius: 6px !important;
+                margin-bottom: 5px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar .container-fluid {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .navbar-brand {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+            .navbar .btn-primary {
+                width: 100%;
+                padding: 10px;
+            }
+            .container {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+            .card-title { font-size: 1.1rem; }
+            .asset-value { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                🏢 AssetRegistry
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assetModal" onclick="resetForm()">
+                + Add New Asset
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        
+        <div class="row mb-4 justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by Category (e.g., Electronics)...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchAssets()">Search</button>
+                    <button class="btn btn-outline-secondary" type="button" onclick="fetchAllAssets()">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="assetGrid" class="row g-4">
+            </div>
+    </div>
+
+    <div class="modal fade" id="assetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Add New Asset</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assetForm">
+                        <input type="hidden" id="assetId">
+                        <div class="mb-3">
+                            <label class="form-label">Asset Name</label>
+                            <input type="text" class="form-control" id="assetName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-control" id="category">
+                                <option value="" disabled selected>Select a Category...</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Software">Software</option>
+                                <option value="Vehicles">Vehicles</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Purchase Value ($)</label>
+                            <input type="number" class="form-control" id="purchaseValue" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Assigned To (Employee)</label>
+                            <input type="text" class="form-control" id="assignedTo" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAsset()">Save Asset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // function getBackendDomain() {
+        //     const domain = window.location.hostname || window.currentURL;
+        //     const protocalPrefix = "https://";
+        //     const firstDotIndex = domain.indexOf('.');
+        //     const subdomain = domain.substring(0, firstDotIndex);
+        //     const restOfDomain = domain.substring(firstDotIndex);
+        //
+        //     if (firstDotIndex === -1) return "http://localhost:8080";
+        //
+        //     return protocalPrefix + subdomain + "-backend" + restOfDomain;
+        // }
+        //
+        // const backendDomain = getBackendDomain();
+        const API_URL = "http://localhost:8080/api";
+        ;
+
+        document.addEventListener('DOMContentLoaded', fetchAllAssets);
+
+        async function fetchAllAssets() {
+            try {
+                const response = await fetch(`${API_URL}/all`);
+                const assets = await response.json();
+                renderAssets(assets);
+            } catch (error) {
+                console.error('Error fetching assets:', error);
+            }
+        }
+
+        // --- UPDATED SEARCH FUNCTION ---
+        async function searchAssets() {
+            const rawInput = document.getElementById('searchInput').value.trim();
+            if (!rawInput) return fetchAllAssets();
+
+            // FIX: Normalize input to "Title Case" (e.g., "electronics" -> "Electronics")
+            // This ensures it matches the format stored in your database.
+            const category = rawInput.charAt(0).toUpperCase() + rawInput.slice(1).toLowerCase();
+
+            try {
+                const response = await fetch(`${API_URL}/category/${category}`);
+                const assets = await response.json();
+                renderAssets(assets);
+            } catch (error) {
+                console.error('Error searching assets:', error);
+            }
+        }
+
+        function renderAssets(assets) {
+            const grid = document.getElementById('assetGrid');
+            grid.innerHTML = '';
+
+            if(assets.length === 0) {
+                grid.innerHTML = '<div class="text-center text-muted">No assets found.</div>';
+                return;
+            }
+
+            assets.forEach(asset => {
+                const card = `
+                    <div class="col-md-4 col-sm-6">
+                        <div class="card asset-card h-100 p-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">${asset.assetName}</h5>
+                                        <h6 class="card-subtitle mb-2">${asset.category}</h6>
+                                    </div>
+                                    <span class="badge bg-secondary">${asset.id}</span>
+                                </div>
+                                <p class="card-text mt-3">
+                                    <small class="text-muted">Assigned to:</small><br>
+                                    <span class="text-white">${asset.assignedTo}</span>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-end mt-4">
+                                    <span class="asset-value">$${asset.purchaseValue}</span>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-info btn-action" onclick="editAsset(${asset.id})">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteAsset(${asset.id})">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        async function saveAsset() {
+            const nameInput = document.getElementById('assetName');
+            const categoryInput = document.getElementById('category');
+            const valueInput = document.getElementById('purchaseValue');
+            const assignedInput = document.getElementById('assignedTo');
+
+            if (!nameInput.value.trim()) {
+                alert("⚠️ Error: Asset Name is mandatory!");
+                nameInput.focus(); 
+                return;
+            }
+
+            if (!assignedInput.value.trim()) {
+                alert("⚠️ Error: Assigned To (Employee Name) is mandatory!");
+                assignedInput.focus();
+                return; 
+            }
+
+            if (categoryInput.value === "") {
+                alert("⚠️ Error: Please select a valid Category!");
+                categoryInput.focus();
+                return;
+            }
+
+            if (!valueInput.value || parseFloat(valueInput.value) < 0) {
+                alert("⚠️ Error: Please enter a valid positive Purchase Value!");
+                valueInput.focus();
+                return;
+            }
+
+            const id = document.getElementById('assetId').value;
+            const asset = {
+                assetName: nameInput.value.trim(),
+                category: categoryInput.value,
+                purchaseValue: parseFloat(valueInput.value),
+                assignedTo: assignedInput.value.trim()
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/update/${id}` : `${API_URL}/add`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(asset)
+                });
+
+                if (response.ok) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('assetModal'));
+                    modal.hide();
+                    fetchAllAssets();
+                    resetForm();
+                } else {
+                    alert("Failed to save asset");
+                }
+            } catch (error) {
+                console.error('Error saving asset:', error);
+            }
+        }
+
+        async function deleteAsset(id) {
+            if(!confirm('Are you sure you want to delete this asset?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/delete/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    fetchAllAssets();
+                }
+            } catch (error) {
+                console.error('Error deleting asset:', error);
+            }
+        }
+
+        async function editAsset(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                const asset = await response.json();
+
+                document.getElementById('assetId').value = asset.id;
+                document.getElementById('assetName').value = asset.assetName;
+                document.getElementById('category').value = asset.category;
+                document.getElementById('purchaseValue').value = asset.purchaseValue;
+                document.getElementById('assignedTo').value = asset.assignedTo;
+
+                document.getElementById('modalTitle').innerText = 'Edit Asset';
+                new bootstrap.Modal(document.getElementById('assetModal')).show();
+            } catch (error) {
+                console.error('Error loading asset for edit:', error);
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('assetForm').reset();
+            document.getElementById('assetId').value = '';
+            document.getElementById('modalTitle').innerText = 'Add New Asset';
+            document.getElementById('category').value = "";
+        }
+    </script>
+</body>
+</html>
+
+
+
